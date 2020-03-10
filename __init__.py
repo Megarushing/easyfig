@@ -55,13 +55,13 @@ class Easyfig(object):
 
     def _load(self):
         # for saving we use only last file
-        save_parser = ConfigParser()
-        save_parser.read(os.path.join(self._script_dir, self._config_filename[-1]))
+        self._save_parser = ConfigParser()
+        self._save_parser.read(os.path.join(self._script_dir, self._config_filename[-1]))
         #for loading we use all files
-        parser = ConfigParser()
+        self._parser = ConfigParser()
         for filename in self._config_filename:
             #loads all ini files, last one has precedence over first
-            parser.read(os.path.join(self._script_dir,filename))
+            self._parser.read(os.path.join(self._script_dir,filename))
 
         #generates all global variables representing config sections
         for section,defaults in self._default_values.items():
@@ -70,10 +70,10 @@ class Easyfig(object):
                 if option.startswith("_"):
                     varname = option.replace("_","",1)
                     #if there is a config with same name remove it, only protected one stays
-                    if varname in parser.items(section):
-                        parser.remove_option(section=section,option=varname)
-                    if varname in save_parser.items(section):
-                        save_parser.remove_option(section=section,option=varname)
+                    if self._parser.has_section(section) and varname in self._parser.items(section):
+                        self._parser.remove_option(section=section,option=varname)
+                    if self._save_parser.has_section(section) and varname in self._save_parser.items(section):
+                        self._save_parser.remove_option(section=section,option=varname)
                 if section != "GENERAL":
                     varname = section.lower() + "_" + varname
                 #cast read string variable to type from default_values
@@ -104,7 +104,7 @@ class Easyfig(object):
         except ParserError as e:
             print("Error getting config",key,"from section",
                   section,":",e,"\nSetting default value:",default)
-            if section != "GENERAL" and not self._save_parser.has_section(section):
+            if not self._save_parser.has_section(section):
                 self._save_parser.add_section(section)
             if type(default) in [list, dict]:  # save as json instead
                 try:
