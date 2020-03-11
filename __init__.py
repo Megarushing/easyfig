@@ -109,27 +109,36 @@ class Easyfig(object):
         except ParserError as e:
             logger.warning("Error getting config %s from section %s: %s\nSetting default value: %s",key,
                   section,e,default)
-            value = self.set(key,value,section=section)
+            value = self._set(key,value,section=section)
         return str(value)
 
-    def set(self,option,value,section="GENERAL"):
-        """ Only allow setting values that previously exist in the defaults
-        also, do not allow setting protected values """
-        if option in dict(self._parser.items(section)) and not option.startswith("_"):
-            if not self._save_parser.has_section(section):
-                self._save_parser.add_section(section)
-            #decide wether we should save it as small json or regular string
-            setval = value
-            if type(value) in [list, dict, tuple]:  # save as json instead
-                try:
-                    self._save_parser.set(section, option, json.dumps(value))
-                    setval = json.dumps(value)
-                except json.decoder.JSONDecodeError:
-                    self._save_parser.set(section, option, str(value))
-                    setval = str(value)
-            else:
+    def _set(self,option,value,section="GENERAL"):
+        """ This is the internal set function which does not verify value protection """
+        if not self._save_parser.has_section(section):
+            self._save_parser.add_section(section)
+        # decide wether we should save it as small json or regular string
+        setval = value
+        if type(value) in [list, dict, tuple]:  # save as json instead
+            try:
+                self._save_parser.set(section, option, json.dumps(value))
+                setval = json.dumps(value)
+            except json.decoder.JSONDecodeError:
                 self._save_parser.set(section, option, str(value))
                 setval = str(value)
+        else:
+            self._save_parser.set(section, option, str(value))
+            setval = str(value)
+        return setval
+
+    def set(self,option,value,section="GENERAL"):
+        """ For security only allow setting values that previously exist,
+        also, do not allow setting protected values """
+        if not self._parser.has_section(section):
+            self._load() #probably just generated the config
+        if self._parser.has_section(section) and\
+            option in dict(self._parser.items(section))\
+            and not option.startswith("_"):
+            setval = self._set(option,value,section)
             self.save()
             self._load()
             return setval
