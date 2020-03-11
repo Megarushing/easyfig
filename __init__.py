@@ -25,23 +25,44 @@ logging.basicConfig()
 logger = logging.getLogger('easyfig')
 
 class Easyfig(object):
-    # Here you should set all possible configs, and their default values
+    # In default_values set all possible configs, and their default values
     # the exact config type will be inferred based on its default values type
     # every dict key will become a global variable under this lib for ease of access
     # NOTE: if config name starts with a _(underscore) it will be protected from the script
     # and only modifiable through manually editing the ini file
-    default_values = {
+    defaults = {
         "GENERAL" : {
             "example" : 1,
             "_protected_example": 0
         }
     }
 
-    # set this function if you need to load additional custom sections not
+    @staticmethod
+    def set_defaults(defaults_dict,section="GENERAL"):
+        """ We can use this method to set the default values for the configuration,
+         this needs to be set before creating the instance, so the correct file is created
+         automatically on first run
+        :param dict defaults_dict: dictionary with variable names and default values
+                                  to be persisted accross multiple runs, this goes
+                                  in the form
+                                    {
+                                        "example" : 1,
+                                        "_protected_example": 0
+                                    }
+                                  the names that begin with _ are protected and can
+                                  only be edited by _set or by modifying the config file
+        :param str section: variables are usually created in the default "GENERAL"
+                            section, in case you need additional sections you can
+                            specify default values for it by setting this variable
+        """
+        Easyfig.defaults[section] = defaults_dict
+
+    # override this function if you need to load additional custom sections not
     # controlled by this script
     def load_additional_sections(self):
-        """ here you should treat the load of additional sections that require special treatment """
-        pass
+        """ override this function if you need to load additional custom sections not
+            controlled by easyfig, you can use self._parser as the preloaded ConfigParser object """
+        return
 
     # set this to the desired config file(s), this can be either a string or a list
     # of multiple strings, when multiple config files are detected, settings are
@@ -50,9 +71,13 @@ class Easyfig(object):
         """ loads the configuration file as fields in this object
             filename accepts both a list of config files to load or a single string"""
         self._config_filename = filename #updates config filename
+        #os.path.dirname(os.path.realpath(__file__)) was writing to module path
         if type(self._config_filename) == str:
             self._config_filename = [self._config_filename]
-        self._script_dir = os.path.dirname(os.path.realpath(__file__))
+        if os.path.isdir(os.path.realpath(sys.argv[0])):
+            self._script_dir = os.path.realpath(sys.argv[0])
+        else:
+            self._script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
         self._parser = None
         self._save_parser = None
         self._load()
@@ -68,7 +93,7 @@ class Easyfig(object):
             self._parser.read(os.path.join(self._script_dir,filename))
 
         #generates all global variables representing config sections
-        for section,defaults in self.default_values.items():
+        for section,defaults in self.defaults.items():
             for option,default_value in defaults.items():
                 varname = option
                 if option.startswith("_"):
