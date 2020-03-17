@@ -17,9 +17,11 @@ import logging
 if sys.version_info >= (3, 0): #Python 3 configparser
     from configparser import ConfigParser
     from configparser import Error as ParserError
+    from json import JSONDecodeError
 else:
     from ConfigParser import ConfigParser
     from ConfigParser import Error as ParserError
+    from simplejson import JSONDecodeError
 
 logging.basicConfig()
 logger = logging.getLogger('easyfig')
@@ -117,7 +119,7 @@ class Easyfig(object):
         if type(default) in [list, dict, tuple]:  # load as json instead
             try:
                 setattr(self,varname,json.loads(value.replace("'", '"')))
-            except json.decoder.JSONDecodeError:
+            except JSONDecodeError:
                 setattr(self,varname,type(default)(value))
         else:
             try:
@@ -147,7 +149,7 @@ class Easyfig(object):
             try:
                 self._save_parser.set(section, option, json.dumps(value))
                 setval = json.dumps(value)
-            except json.decoder.JSONDecodeError:
+            except JSONDecodeError:
                 self._save_parser.set(section, option, str(value))
                 setval = str(value)
         else:

@@ -1,9 +1,11 @@
 # easyfig
-A simple yet powerful configuration script automator based on python configparser
+A simple yet powerful configurations automator based on python configparser and ini files
+
+
 
 This is a simple script to automate configuration persistence
 and accessibility throughout the system using python default config parser,
-the only thing you need to edit is the default_values field for the default
+the only thing you need to edit is the defaults field for the default
 settings desired, you may do this by inheriting this class or modifying
 that field before creating an instance.
 You can also provide a filename when instatiating if you desire so,
