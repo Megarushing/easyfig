@@ -27,6 +27,11 @@ logging.basicConfig()
 logger = logging.getLogger('easyfig')
 
 class Easyfig(object):
+    # set _config_filename to the desired config file(s), this can be either a string or a list
+    # of multiple strings, when multiple config files are detected, settings are
+    # loaded from all files in order, but saved only to the last one
+    _config_filename = 'config.ini'
+
     # In default_values set all possible configs, and their default values
     # the exact config type will be inferred based on its default values type
     # every dict key will become a global variable under this lib for ease of access
@@ -66,13 +71,12 @@ class Easyfig(object):
             controlled by easyfig, you can use self._parser as the preloaded ConfigParser object """
         return
 
-    # set this to the desired config file(s), this can be either a string or a list
-    # of multiple strings, when multiple config files are detected, settings are
-    # loaded from all files in order, but saved only to the last one
-    def __init__(self,filename='config.ini'):
+    # set filename to the desired config file(s) if you do not wish to use the default config.ini
+    def __init__(self,filename=None):
         """ loads the configuration file as fields in this object
             filename accepts both a list of config files to load or a single string"""
-        self._config_filename = filename #updates config filename
+        if filename:
+            self._config_filename = filename #updates config filename
         #os.path.dirname(os.path.realpath(__file__)) was writing to module path
         if type(self._config_filename) == str:
             self._config_filename = [self._config_filename]
@@ -82,9 +86,9 @@ class Easyfig(object):
             self._script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
         self._parser = None
         self._save_parser = None
-        self._load()
+        self.reload()
 
-    def _load(self):
+    def reload(self):
         # for saving we use only last file
         self._save_parser = ConfigParser()
         self._save_parser.read(os.path.join(self._script_dir, self._config_filename[-1]))
@@ -161,13 +165,13 @@ class Easyfig(object):
         """ For security only allow setting values that previously exist,
         also, do not allow setting protected values """
         if not self._parser.has_section(section):
-            self._load() #probably just generated the config
+            self.reload() #probably just generated the config
         if self._parser.has_section(section) and\
             option in dict(self._parser.items(section))\
             and not option.startswith("_"):
             setval = self._set(option,value,section)
             self.save()
-            self._load()
+            self.reload()
             return setval
         else:
             return False
